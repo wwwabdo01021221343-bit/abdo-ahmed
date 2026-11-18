@@ -1,0 +1,418 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Item in the store catalog with retail and optional wholesale pricing",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique product identifier",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Product display name in Arabic",
+          "maxLength": 300
+        },
+        "price": {
+          "type": "number",
+          "description": "Retail selling price in EGP"
+        },
+        "category": {
+          "type": "string",
+          "description": "Product category / classification",
+          "maxLength": 150
+        },
+        "dozenPrice": {
+          "type": "number",
+          "description": "Optional retail dozen selling price in EGP"
+        },
+        "wholesalePrice": {
+          "type": "number",
+          "description": "Secret wholesale cost price in EGP, visible only to store owner"
+        },
+        "image": {
+          "type": "string",
+          "description": "Compressed base64 photo data URL or image URL",
+          "maxLength": 250000
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp when product was first added"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        },
+        "updatedBy": {
+          "type": "string",
+          "description": "UID or email of user who last modified the product",
+          "maxLength": 128
+        }
+      },
+      "required": ["id", "name", "price", "category"]
+    },
+    "ShortageItem": {
+      "title": "ShortageItem",
+      "description": "Item requested for procurement from suppliers",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique shortage identifier",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the missing item",
+          "maxLength": 300
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Quantity requested"
+        },
+        "category": {
+          "type": "string",
+          "description": "Category of the item",
+          "maxLength": 150
+        },
+        "done": {
+          "type": "boolean",
+          "description": "Whether the shortage has been fulfilled"
+        },
+        "date": {
+          "type": "string",
+          "description": "Creation date ISO string"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Procurement notes",
+          "maxLength": 500
+        }
+      },
+      "required": ["id", "name", "quantity", "category", "done", "date"]
+    },
+    "StoreSettings": {
+      "title": "StoreSettings",
+      "description": "General settings for the store and receipts",
+      "type": "object",
+      "properties": {
+        "shop": {
+          "type": "string",
+          "description": "Store name",
+          "maxLength": 200
+        },
+        "phone": {
+          "type": "string",
+          "description": "Store phone number for receipts and contact",
+          "maxLength": 50
+        },
+        "tagline": {
+          "type": "string",
+          "description": "Subtitle on receipts",
+          "maxLength": 200
+        },
+        "address": {
+          "type": "string",
+          "description": "Store physical address",
+          "maxLength": 300
+        },
+        "ownerEmail": {
+          "type": "string",
+          "description": "Store owner email",
+          "maxLength": 150
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last updated timestamp"
+        }
+      },
+      "required": ["shop", "phone"]
+    },
+    "AdminProfile": {
+      "title": "AdminProfile",
+      "description": "Trusted admin or owner role record",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "Admin email address",
+          "maxLength": 150
+        },
+        "role": {
+          "type": "string",
+          "description": "Admin role",
+          "enum": ["owner", "admin"]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Date admin was granted"
+        }
+      },
+      "required": ["email", "role"]
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "Store sales invoice created by cashiers and synced across all devices",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique invoice identifier",
+          "maxLength": 128
+        },
+        "customer": {
+          "type": "string",
+          "description": "Customer name or identifier",
+          "maxLength": 200
+        },
+        "items": {
+          "type": "array",
+          "description": "List of cart line items in this invoice"
+        },
+        "total": {
+          "type": "number",
+          "description": "Total invoice amount in EGP"
+        },
+        "discount": {
+          "type": "number",
+          "description": "Optional discount amount in EGP"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Invoice notes",
+          "maxLength": 500
+        },
+        "date": {
+          "type": "string",
+          "description": "Creation timestamp ISO string"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last updated timestamp ISO string"
+        }
+      },
+      "required": ["id", "items", "total", "date"]
+    },
+    "AuthorizedEmail": {
+      "title": "AuthorizedEmail",
+      "description": "Verified cashier or device Google account authorized by store owner to access store cloud data",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "Lowercase verified Google account email address",
+          "maxLength": 150
+        },
+        "label": {
+          "type": "string",
+          "description": "Friendly device or cashier label",
+          "maxLength": 100
+        },
+        "role": {
+          "type": "string",
+          "description": "Authorized store role",
+          "enum": ["cashier"]
+        },
+        "addedAt": {
+          "type": "string",
+          "description": "ISO timestamp when access was granted"
+        },
+        "addedBy": {
+          "type": "string",
+          "description": "Owner email who granted access",
+          "maxLength": 150
+        }
+      },
+      "required": ["email", "role", "addedAt"]
+    },
+    "TrashItem": {
+      "title": "TrashItem",
+      "description": "Soft-deleted product, invoice, or shortage retained for 30 days before permanent deletion",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique trash record identifier",
+          "maxLength": 128
+        },
+        "entityType": {
+          "type": "string",
+          "description": "Type of deleted entity",
+          "enum": ["product", "invoice", "shortage"]
+        },
+        "originalId": {
+          "type": "string",
+          "description": "Original document ID of the deleted entity",
+          "maxLength": 128
+        },
+        "title": {
+          "type": "string",
+          "description": "Display name of the deleted item",
+          "maxLength": 300
+        },
+        "subtitle": {
+          "type": "string",
+          "description": "Summary metadata such as price and category",
+          "maxLength": 300
+        },
+        "data": {
+          "type": "object",
+          "description": "Full snapshot of the deleted item for exact restoration"
+        },
+        "deletedAt": {
+          "type": "string",
+          "description": "ISO timestamp when item was moved to trash"
+        },
+        "expiresAt": {
+          "type": "string",
+          "description": "ISO timestamp 30 days after deletion when item expires"
+        },
+        "deletedBy": {
+          "type": "string",
+          "description": "Email or role of user who deleted the item",
+          "maxLength": 150
+        }
+      },
+      "required": ["id", "entityType", "originalId", "title", "data", "deletedAt", "expiresAt"]
+    },
+    "CloudBackupManifest": {
+      "title": "CloudBackupManifest",
+      "description": "Metadata manifest for a daily or manual cloud backup snapshot",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique backup snapshot ID (e.g. daily_2026_11_15)",
+          "maxLength": 128
+        },
+        "dateKey": {
+          "type": "string",
+          "description": "Calendar date key in YYYY-MM-DD format",
+          "maxLength": 32
+        },
+        "label": {
+          "type": "string",
+          "description": "Human readable label in Arabic",
+          "maxLength": 200
+        },
+        "reason": {
+          "type": "string",
+          "description": "Trigger reason for snapshot",
+          "enum": ["auto_daily", "manual", "pre_wipe", "pre_restore"]
+        },
+        "productCount": {
+          "type": "number",
+          "description": "Total products included in snapshot"
+        },
+        "categoryCount": {
+          "type": "number",
+          "description": "Total product categories included in snapshot"
+        },
+        "invoiceCount": {
+          "type": "number",
+          "description": "Total invoices included in snapshot"
+        },
+        "shortageCount": {
+          "type": "number",
+          "description": "Total shortages included in snapshot"
+        },
+        "chunkCount": {
+          "type": "number",
+          "description": "Number of chunk documents in subcollection"
+        },
+        "settings": {
+          "type": "object",
+          "description": "Snapshot of store settings"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp when backup was first created"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last snapshot update"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Owner email that saved the snapshot",
+          "maxLength": 150
+        }
+      },
+      "required": ["id", "dateKey", "label", "reason", "productCount", "categoryCount", "invoiceCount", "shortageCount", "chunkCount", "createdAt", "updatedAt"]
+    },
+    "CloudBackupChunk": {
+      "title": "CloudBackupChunk",
+      "description": "Bounded slice document storing products, invoices, and shortages for a cloud backup snapshot",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Chunk document ID",
+          "maxLength": 128
+        },
+        "backupId": {
+          "type": "string",
+          "description": "Parent CloudBackupManifest ID",
+          "maxLength": 128
+        },
+        "chunkIndex": {
+          "type": "number",
+          "description": "Zero-based index of chunk"
+        },
+        "products": {
+          "type": "array",
+          "description": "Products slice"
+        },
+        "invoices": {
+          "type": "array",
+          "description": "Invoices slice"
+        },
+        "shortages": {
+          "type": "array",
+          "description": "Shortages slice"
+        }
+      },
+      "required": ["id", "backupId", "chunkIndex", "products", "invoices", "shortages"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Catalog of all products and prices, real-time synced to all unlocked store devices (anyone can add new items; Owner-only edit/delete)"
+    },
+    "/shortages/{shortageId}": {
+      "schema": "ShortageItem",
+      "description": "Shared shortage notebook for all store devices (collaborative read/add/update; Owner-only delete)"
+    },
+    "/invoices/{invoiceId}": {
+      "schema": "Invoice",
+      "description": "Sales invoices created across all store devices and synced live (Owner-only edit/delete)"
+    },
+    "/settings/{settingsId}": {
+      "schema": "StoreSettings",
+      "description": "Store branding and contact settings (readable by all devices; Owner-only write)"
+    },
+    "/admins/{adminUid}": {
+      "schema": "AdminProfile",
+      "description": "Authorized admin users who have full write permissions"
+    },
+    "/authorized_emails/{email}": {
+      "schema": "AuthorizedEmail",
+      "description": "Verified cashier Google accounts authorized by store owner to sync store data"
+    },
+    "/trash_bin/{trashId}": {
+      "schema": "TrashItem",
+      "description": "30-day soft-delete recycle bin accessible exclusively by the store owner"
+    },
+    "/cloud_backups/{backupId}": {
+      "schema": "CloudBackupManifest",
+      "description": "Daily automatic backups (writable from any unlocked device for daily_YYYY_MM_DD) and manual backups; listing, restoring, downloading, and deleting strictly restricted to store owner"
+    },
+    "/cloud_backups/{backupId}/chunks/{chunkId}": {
+      "schema": "CloudBackupChunk",
+      "description": "Chunked snapshot payloads belonging to a cloud backup manifest (readable/restorable/deletable exclusively by store owner)"
+    }
+  }
+}

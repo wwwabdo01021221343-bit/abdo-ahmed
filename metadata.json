@@ -1,0 +1,8 @@
+{
+  "name": "ادراه المكتبات",
+  "description": "تطبيق متكامل لإدارة مكتبة الطيب أحسن: كاشير وفواتير سريعة، إدارة الأصناف والمجموعات، دفتر نواقص ذكي، طباعة فواتير وقوائم أسعار، ومزامنة النسخ الاحتياطية.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

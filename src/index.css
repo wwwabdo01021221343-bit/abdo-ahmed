@@ -1,0 +1,248 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.6);
+}
+
+/* ====================================================
+   ULTRA-PROFESSIONAL PRINT STYLES (ZERO BACKGROUND BLEED)
+   ==================================================== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 6mm 7mm 6mm 7mm !important;
+  }
+
+  /* Force exact background colors and crisp borders in print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-family: 'Cairo', system-ui, -apple-system, sans-serif !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide app navigation, header, buttons and non-printable UI */
+  .no-print,
+  header,
+  nav,
+  footer,
+  button,
+  .no-print-area {
+    display: none !important;
+  }
+
+  /* Avoid awkward page breaks inside rows or tables */
+  tr, .print-avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* ----------------------------------------------------
+     MODE 1: FULL A4/A5 PROFESSIONAL INVOICE PRINTING
+     Fills the entire sheet with zero background leakage
+     ---------------------------------------------------- */
+  body.print-invoice-a4 * {
+    visibility: hidden !important;
+  }
+
+  body.print-invoice-a4 #printable-invoice-a4-sheet,
+  body.print-invoice-a4 #printable-invoice-a4-sheet * {
+    visibility: visible !important;
+  }
+
+  body.print-invoice-a4 #printable-invoice-a4-sheet {
+    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    box-sizing: border-box !important;
+  }
+}
+
+@media screen {
+  #printable-invoice-a4-sheet,
+  #printable-shortages-sheet {
+    display: none !important;
+  }
+}
+
+@media print {
+
+  /* ----------------------------------------------------
+     MODE 2: 80mm THERMAL RECEIPT PRINTING
+     ---------------------------------------------------- */
+  body.print-receipt-mode {
+    width: 78mm !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+  }
+
+  body.print-receipt-mode * {
+    visibility: hidden !important;
+  }
+
+  body.print-receipt-mode #printable-receipt-area,
+  body.print-receipt-mode #printable-receipt-area * {
+    visibility: visible !important;
+  }
+
+  body.print-receipt-mode #printable-receipt-area {
+    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 76mm !important;
+    margin: 0 auto !important;
+    padding: 1.5mm !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    font-size: 8.5pt !important;
+  }
+
+  /* ----------------------------------------------------
+     MODE 3: SHORTAGES SHEET PRINTING
+     ---------------------------------------------------- */
+  body.print-shortages-mode * {
+    visibility: hidden !important;
+  }
+
+  body.print-shortages-mode #printable-shortages-sheet,
+  body.print-shortages-mode #printable-shortages-sheet * {
+    visibility: visible !important;
+  }
+
+  body.print-shortages-mode #printable-shortages-sheet {
+    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Crisp Print Tables (Zero Overlap, Clean Natural Flow, Respects Adaptive Padding) */
+  .print-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    table-layout: auto !important;
+  }
+
+  .print-table th,
+  .print-table td {
+    border: 1px solid #64748b !important;
+    vertical-align: middle !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    line-height: 1.35 !important;
+  }
+
+  .print-table th {
+    font-weight: 800;
+  }
+
+  #printable-invoice-a4-sheet .print-table th {
+    border-color: #065f46 !important;
+  }
+
+  #printable-invoice-a4-sheet .print-table td {
+    border-color: #cbd5e1 !important;
+  }
+}
+
+/* Performance optimization for long lists/grids */
+.perf-item {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 72px;
+}
+
+/* Official Google Sign In Button */
+.gsi-material-button {
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  -webkit-appearance: none;
+  background-color: #ffffff;
+  background-image: none;
+  border: 1px solid #747775;
+  border-radius: 12px;
+  box-sizing: border-box;
+  color: #1f1f1f;
+  cursor: pointer;
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 14px;
+  height: 44px;
+  letter-spacing: 0.25px;
+  outline: none;
+  overflow: hidden;
+  padding: 0 16px;
+  position: relative;
+  text-align: center;
+  transition: background-color .218s, border-color .218s, box-shadow .218s;
+  vertical-align: middle;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.gsi-material-button:hover {
+  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, .30), 0 1px 3px 1px rgba(60, 64, 67, .15);
+  background-color: #f8fafc;
+}
+.gsi-material-button .gsi-material-button-content-wrapper {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+  gap: 10px;
+}
+.gsi-material-button .gsi-material-button-icon {
+  height: 20px;
+  min-width: 20px;
+  width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gsi-material-button .gsi-material-button-contents {
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-weight: 600;
+  vertical-align: middle;
+}
+

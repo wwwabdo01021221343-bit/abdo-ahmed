@@ -1,0 +1,346 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Global Helpers
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() &&
+             request.auth.token.email != null &&
+             request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidEmailId(emailId) {
+      return emailId is string &&
+             emailId.size() >= 5 &&
+             emailId.size() <= 150 &&
+             emailId == emailId.lower() &&
+             emailId.matches('^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$');
+    }
+
+    // Tier 1: Store Owner / Verified Admin
+    function isAdmin() {
+      return isEmailVerified() && (
+        request.auth.token.email.lower() == 'www.abdo01021221343@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Tier 2: Authorized Cashier / Store Device added by Owner
+    function isAuthorizedEmail() {
+      return isEmailVerified() &&
+             exists(/databases/$(database)/documents/authorized_emails/$(request.auth.token.email.lower()));
+    }
+
+    // Combined Store Staff / Owner Gate
+    function isAuthorizedStoreUser() {
+      return isAdmin() || isAuthorizedEmail();
+    }
+
+    // Product Entity Validation Helper
+    function isValidProduct(data) {
+      return data.keys().hasAll(['id', 'name', 'price', 'category']) &&
+             data.keys().hasOnly(['id', 'name', 'price', 'category', 'dozenPrice', 'wholesalePrice', 'image', 'createdAt', 'updatedAt', 'updatedBy']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 300 &&
+             data.price is number && data.price >= 0 &&
+             data.category is string && data.category.size() > 0 && data.category.size() <= 150 &&
+             (!('dozenPrice' in data) || (data.dozenPrice is number && data.dozenPrice >= 0)) &&
+             (!('wholesalePrice' in data) || (data.wholesalePrice is number && data.wholesalePrice >= 0)) &&
+             (!('image' in data) || (data.image is string && data.image.size() <= 250000)) &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64)) &&
+             (!('updatedBy' in data) || (data.updatedBy is string && data.updatedBy.size() <= 128));
+    }
+
+    // Shortage Item Validation Helper
+    function isValidShortage(data) {
+      return data.keys().hasAll(['id', 'name', 'quantity', 'category', 'done', 'date']) &&
+             data.keys().hasOnly(['id', 'name', 'quantity', 'category', 'done', 'date', 'notes', 'updatedAt']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 300 &&
+             data.quantity is number && data.quantity >= 1 && data.quantity <= 10000 &&
+             data.category is string && data.category.size() > 0 && data.category.size() <= 150 &&
+             data.done is bool &&
+             data.date is string && data.date.size() > 0 && data.date.size() <= 64 &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 500)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    // Invoice Entity Validation Helper
+    function isValidInvoice(data) {
+      return data.keys().hasAll(['id', 'items', 'total', 'date']) &&
+             data.keys().hasOnly(['id', 'customer', 'items', 'total', 'discount', 'notes', 'date', 'updatedAt']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+             (!('customer' in data) || (data.customer is string && data.customer.size() <= 200)) &&
+             data.items is list && data.items.size() > 0 && data.items.size() <= 500 && data.items[0] is map &&
+             data.total is number && data.total >= 0 &&
+             (!('discount' in data) || (data.discount is number && data.discount >= 0)) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 500)) &&
+             data.date is string && data.date.size() > 0 && data.date.size() <= 64 &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    // Store Settings Validation Helper
+    function isValidSettings(data) {
+      return data.keys().hasAll(['shop', 'phone']) &&
+             data.keys().hasOnly(['shop', 'phone', 'tagline', 'address', 'ownerEmail', 'updatedAt']) &&
+             data.shop is string && data.shop.size() > 0 && data.shop.size() <= 200 &&
+             data.phone is string && data.phone.size() > 0 && data.phone.size() <= 50 &&
+             (!('tagline' in data) || (data.tagline is string && data.tagline.size() <= 200)) &&
+             (!('address' in data) || (data.address is string && data.address.size() <= 300)) &&
+             (!('ownerEmail' in data) || (data.ownerEmail is string && data.ownerEmail.size() <= 150)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    // Admin Profile Validation Helper
+    function isValidAdmin(data) {
+      return data.keys().hasAll(['email', 'role']) &&
+             data.keys().hasOnly(['email', 'role', 'createdAt']) &&
+             data.email is string && data.email.size() > 0 && data.email.size() <= 150 &&
+             (data.role == 'owner' || data.role == 'admin') &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64));
+    }
+
+    // Authorized Store Email Allowlist Validation Helper
+    function isValidAuthorizedEmail(data) {
+      return data.keys().hasAll(['email', 'role', 'addedAt']) &&
+             data.keys().hasOnly(['email', 'label', 'role', 'addedAt', 'addedBy']) &&
+             data.email is string && data.email.size() >= 5 && data.email.size() <= 150 &&
+             data.email == data.email.lower() &&
+             data.role == 'cashier' &&
+             data.addedAt is string && data.addedAt.size() > 0 && data.addedAt.size() <= 64 &&
+             (!('label' in data) || (data.label is string && data.label.size() <= 100)) &&
+             (!('addedBy' in data) || (data.addedBy is string && data.addedBy.size() <= 150));
+    }
+
+    // 30-Day Trash Bin Validation Helper
+    function isValidTrashItem(data) {
+      return data.keys().hasAll(['id', 'entityType', 'originalId', 'title', 'data', 'deletedAt', 'expiresAt']) &&
+             data.keys().hasOnly(['id', 'entityType', 'originalId', 'title', 'subtitle', 'data', 'deletedAt', 'expiresAt', 'deletedBy']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+             (data.entityType == 'product' || data.entityType == 'invoice' || data.entityType == 'shortage') &&
+             data.originalId is string && data.originalId.size() > 0 && data.originalId.size() <= 128 &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 300 &&
+             (!('subtitle' in data) || (data.subtitle is string && data.subtitle.size() <= 300)) &&
+             data.data is map &&
+             data.deletedAt is string && data.deletedAt.size() > 0 && data.deletedAt.size() <= 64 &&
+             data.expiresAt is string && data.expiresAt.size() > 0 && data.expiresAt.size() <= 64 &&
+             (!('deletedBy' in data) || (data.deletedBy is string && data.deletedBy.size() <= 150));
+    }
+
+    // Cloud Backup Manifest Validation Helper
+    function isValidCloudBackupManifest(data) {
+      return data.keys().hasAll(['id', 'dateKey', 'label', 'reason', 'productCount', 'categoryCount', 'invoiceCount', 'shortageCount', 'chunkCount', 'createdAt', 'updatedAt']) &&
+             data.keys().hasOnly(['id', 'dateKey', 'label', 'reason', 'productCount', 'categoryCount', 'invoiceCount', 'shortageCount', 'chunkCount', 'settings', 'createdAt', 'updatedAt', 'createdBy']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+             data.dateKey is string && data.dateKey.size() > 0 && data.dateKey.size() <= 32 &&
+             data.label is string && data.label.size() > 0 && data.label.size() <= 200 &&
+             (data.reason == 'auto_daily' || data.reason == 'manual' || data.reason == 'pre_wipe' || data.reason == 'pre_restore') &&
+             data.productCount is number && data.productCount >= 0 &&
+             data.categoryCount is number && data.categoryCount >= 0 &&
+             data.invoiceCount is number && data.invoiceCount >= 0 &&
+             data.shortageCount is number && data.shortageCount >= 0 &&
+             data.chunkCount is number && data.chunkCount >= 1 && data.chunkCount <= 200 &&
+             (!('settings' in data) || data.settings is map) &&
+             data.createdAt is string && data.createdAt.size() > 0 && data.createdAt.size() <= 64 &&
+             data.updatedAt is string && data.updatedAt.size() > 0 && data.updatedAt.size() <= 64 &&
+             (!('createdBy' in data) || (data.createdBy is string && data.createdBy.size() <= 150));
+    }
+
+    // Cloud Backup Chunk Validation Helper
+    function isValidCloudBackupChunk(data, parentBackupId) {
+      return data.keys().hasAll(['id', 'backupId', 'chunkIndex', 'products', 'invoices', 'shortages']) &&
+             data.keys().hasOnly(['id', 'backupId', 'chunkIndex', 'products', 'invoices', 'shortages']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+             data.backupId == parentBackupId &&
+             data.chunkIndex is number && data.chunkIndex >= 0 && data.chunkIndex <= 200 &&
+             data.products is list && data.products.size() <= 300 && (data.products.size() == 0 || data.products[0] is map) &&
+             data.invoices is list && data.invoices.size() <= 300 && (data.invoices.size() == 0 || data.invoices[0] is map) &&
+             data.shortages is list && data.shortages.size() <= 500 && (data.shortages.size() == 0 || data.shortages[0] is map);
+    }
+
+    // 1. PRODUCTS COLLECTION
+    // All unlocked store devices can read catalog and add new missing products directly to cloud;
+    // ONLY verified Store Owner (isAdmin) can edit existing products/prices or delete items.
+    match /products/{productId} {
+      allow get: if isValidId(productId);
+      allow list: if true;
+      allow create: if isValidId(productId) &&
+                       isValidProduct(incoming()) &&
+                       incoming().id == productId;
+      allow update: if isValidId(productId) &&
+                       isAdmin() &&
+                       isValidProduct(incoming()) &&
+                       incoming().id == existing().id &&
+                       (!('createdAt' in existing()) || ('createdAt' in incoming() && incoming().createdAt == existing().createdAt));
+      allow delete: if isValidId(productId) && isAdmin();
+    }
+
+    // 2. SHORTAGES COLLECTION
+    // Collaborative between all store devices (read, add, update quantities/done/notes);
+    // ONLY verified Store Owner (isAdmin) can delete shortages.
+    match /shortages/{shortageId} {
+      allow get: if isValidId(shortageId);
+      allow list: if true;
+      allow create: if isValidId(shortageId) &&
+                       isValidShortage(incoming()) &&
+                       incoming().id == shortageId;
+      allow update: if isValidId(shortageId) &&
+                       isValidShortage(incoming()) &&
+                       incoming().id == existing().id &&
+                       incoming().date == existing().date &&
+                       (isAdmin() || incoming().diff(existing()).affectedKeys().hasOnly(['name', 'quantity', 'category', 'done', 'notes', 'updatedAt']));
+      allow delete: if isValidId(shortageId) && isAdmin();
+    }
+
+    // 3. INVOICES COLLECTION
+    // All unlocked store devices can read & issue new invoices to cloud;
+    // ONLY verified Store Owner (isAdmin) can modify or delete existing invoices.
+    match /invoices/{invoiceId} {
+      allow get: if isValidId(invoiceId);
+      allow list: if true;
+      allow create: if isValidId(invoiceId) &&
+                       isValidInvoice(incoming()) &&
+                       incoming().id == invoiceId;
+      allow update: if isValidId(invoiceId) &&
+                       isAdmin() &&
+                       isValidInvoice(incoming()) &&
+                       incoming().id == existing().id &&
+                       incoming().date == existing().date;
+      allow delete: if isValidId(invoiceId) && isAdmin();
+    }
+
+    // 4. STORE SETTINGS
+    // All store devices can read branding/contact settings; strictly Owner-only writes on main doc
+    match /settings/{settingsId} {
+      allow get: if isValidId(settingsId);
+      allow list: if true;
+      allow create, update: if isValidId(settingsId) && settingsId == 'main' && isAdmin() && isValidSettings(incoming());
+      allow delete: if isValidId(settingsId) && settingsId == 'main' && isAdmin();
+    }
+
+    // 5. ADMINS REGISTRY
+    // Strictly isolated: only verified admins can list/write, users can only read their own doc
+    match /admins/{adminUid} {
+      allow get: if isSignedIn() && (request.auth.uid == adminUid || isAdmin());
+      allow list: if isAdmin();
+      allow create, update: if isValidId(adminUid) && isAdmin() && isValidAdmin(incoming());
+      allow delete: if isValidId(adminUid) && isAdmin();
+    }
+
+    // 6. AUTHORIZED STORE EMAILS ALLOWLIST
+    // Owner can manage authorized cashier Google accounts; cashiers can only check their own record
+    match /authorized_emails/{emailId} {
+      allow get: if isValidEmailId(emailId) && (isAdmin() || (isEmailVerified() && request.auth.token.email.lower() == emailId));
+      allow list: if isAdmin();
+      allow create, update: if isValidEmailId(emailId) &&
+                               isAdmin() &&
+                               isValidAuthorizedEmail(incoming()) &&
+                               incoming().email == emailId;
+      allow delete: if isValidEmailId(emailId) && isAdmin();
+    }
+
+    // 7. 30-DAY SOFT-DELETE TRASH BIN (Owner Only)
+    // Protects wholesale prices and deleted items for 30 days before permanent purge
+    match /trash_bin/{trashId} {
+      allow get: if isValidId(trashId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(trashId) &&
+                       isAdmin() &&
+                       isValidTrashItem(incoming()) &&
+                       incoming().id == trashId;
+      allow update: if isValidId(trashId) &&
+                       isAdmin() &&
+                       isValidTrashItem(incoming()) &&
+                       incoming().id == existing().id &&
+                       incoming().deletedAt == existing().deletedAt;
+      allow delete: if isValidId(trashId) && isAdmin();
+    }
+
+    // Helper: dated daily automatic backup IDs (daily_YYYY_MM_DD)
+    function isDailyBackupId(backupId) {
+      return backupId.matches('^daily_[0-9]{4}_[0-9]{2}_[0-9]{2}$');
+    }
+
+    // 8. DAILY & MANUAL CLOUD BACKUPS VAULT
+    // Any unlocked store device can save/refresh today's auto_daily backup (daily_YYYY_MM_DD)
+    // so backups are guaranteed even when only staff devices are used.
+    // ONLY the verified Store Owner (isAdmin) can list all backups, read/restore/download chunks
+    // (which hold confidential wholesale prices), create manual/pre-wipe snapshots, or delete backups.
+    match /cloud_backups/{backupId} {
+      allow get: if isValidId(backupId) && (isAdmin() || isDailyBackupId(backupId));
+      allow list: if isAdmin();
+      allow create: if isValidId(backupId) &&
+                       isValidCloudBackupManifest(incoming()) &&
+                       incoming().id == backupId &&
+                       (isAdmin() || (isDailyBackupId(backupId) && incoming().reason == 'auto_daily'));
+      allow update: if isValidId(backupId) &&
+                       isValidCloudBackupManifest(incoming()) &&
+                       incoming().id == existing().id &&
+                       incoming().createdAt == existing().createdAt &&
+                       (isAdmin() || (
+                         isDailyBackupId(backupId) &&
+                         existing().reason == 'auto_daily' &&
+                         incoming().reason == 'auto_daily' &&
+                         incoming().dateKey == existing().dateKey
+                       ));
+      allow delete: if isValidId(backupId) && isAdmin();
+
+      match /chunks/{chunkId} {
+        allow get: if isValidId(backupId) &&
+                      isValidId(chunkId) &&
+                      isAdmin() &&
+                      exists(/databases/$(database)/documents/cloud_backups/$(backupId));
+        allow list: if isValidId(backupId) &&
+                       isAdmin() &&
+                       exists(/databases/$(database)/documents/cloud_backups/$(backupId));
+        allow create: if isValidId(backupId) &&
+                         isValidId(chunkId) &&
+                         exists(/databases/$(database)/documents/cloud_backups/$(backupId)) &&
+                         isValidCloudBackupChunk(incoming(), backupId) &&
+                         incoming().id == chunkId &&
+                         (isAdmin() || (
+                           isDailyBackupId(backupId) &&
+                           get(/databases/$(database)/documents/cloud_backups/$(backupId)).data.reason == 'auto_daily' &&
+                           incoming().chunkIndex < get(/databases/$(database)/documents/cloud_backups/$(backupId)).data.chunkCount
+                         ));
+        allow update: if isValidId(backupId) &&
+                         isValidId(chunkId) &&
+                         exists(/databases/$(database)/documents/cloud_backups/$(backupId)) &&
+                         isValidCloudBackupChunk(incoming(), backupId) &&
+                         incoming().id == existing().id &&
+                         incoming().backupId == existing().backupId &&
+                         (isAdmin() || (
+                           isDailyBackupId(backupId) &&
+                           get(/databases/$(database)/documents/cloud_backups/$(backupId)).data.reason == 'auto_daily' &&
+                           incoming().chunkIndex < get(/databases/$(database)/documents/cloud_backups/$(backupId)).data.chunkCount
+                         ));
+        allow delete: if isValidId(backupId) &&
+                         isValidId(chunkId) &&
+                         isAdmin() &&
+                         exists(/databases/$(database)/documents/cloud_backups/$(backupId));
+      }
+    }
+  }
+}
